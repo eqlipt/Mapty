@@ -90,6 +90,14 @@ const inputDuration = document.querySelector('.form__input--duration');
 const inputCadence = document.querySelector('.form__input--cadence');
 const inputElevation = document.querySelector('.form__input--elevation');
 const buttonReset = document.querySelector('.sidebar__action');
+const modal = document.querySelector('.modal');
+const overlay = document.querySelector('.overlay');
+const modalHeader = document.querySelector('.modal__header');
+const modalMessage = document.querySelector('.modal__message');
+const modalButtons = document.querySelector('.modal__action-buttons');
+const buttonCloseModal = document.querySelector('.btn--close-modal');
+const buttonDelete = document.querySelector('#btn-delete');
+const buttonCancel = document.querySelector('#btn-cancel');
 
 class App {
   #map;
@@ -190,6 +198,14 @@ class App {
     const workoutFromArray = this._getWorkoutFromArrayByEvent(e);
     if (!workoutFromArray) return;
 
+    // Get confirmation
+    const confirmationDialog = new Dialog(
+      'Confirm delete',
+      'Are you sure you want to delete this workout?',
+      true
+    );
+    // add confirmation functionality
+
     // Identify and delete map marker
     const markerToDelete = this.#mapMarkers.find(mrkr =>
       this._compareCoords(mrkr, workoutFromArray)
@@ -215,7 +231,10 @@ class App {
   _getPosition() {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(this._loadMap.bind(this), () => {
-        alert('No location detected');
+        return new Dialog(
+          'No location detected',
+          'Please allow geolocation in your browser'
+        );
       });
     }
   }
@@ -227,7 +246,7 @@ class App {
         lng: this.#currentWorkout.coords[1],
       };
     else if (this.#mapEvent) return this.#mapEvent.latlng;
-    else return alert("Can't get coords");
+    else return new Dialog('Location error', "Can't get your coordinates");
   }
 
   _compareCoords(mapMarker, workout) {
@@ -375,7 +394,7 @@ class App {
         !validateNumber(distance, duration, cadence) ||
         !validatePositive(distance, duration, cadence)
       )
-        return alert('Please enter positive numbers');
+        return new Dialog('Invalid value', 'Please enter positive numbers');
       if (this.#currentWorkout) {
         this.#currentWorkout.__proto__ = Running.prototype;
         this.#currentWorkout.type = 'running';
@@ -390,7 +409,7 @@ class App {
         !validateNumber(distance, duration, elevationGain) ||
         !validatePositive(distance, duration)
       )
-        return alert('Please enter numbers');
+        return new Dialog('Invalid value', 'Please enter positive numbers');
       if (this.#currentWorkout) {
         this.#currentWorkout.__proto__ = Cycling.prototype;
         this.#currentWorkout.type = 'cycling';
@@ -521,6 +540,55 @@ class App {
   _reset() {
     localStorage.removeItem('workouts');
     location.reload();
+  }
+}
+
+class Dialog {
+  header;
+  text;
+  showButtons;
+
+  constructor(header, text, showButtons = false) {
+    this.header = header;
+    this.text = text;
+    this.showButtons = showButtons;
+    this._setContent();
+    this._open();
+    document.addEventListener('keyup', e => this._handleEscape(e));
+  }
+
+  _setContent() {
+    modalHeader.innerHTML = this.header;
+    modalMessage.innerHTML = this.text;
+  }
+
+  _open() {
+    modal.classList.remove('hidden');
+    overlay.classList.remove('hidden');
+    buttonCloseModal.addEventListener('click', this._close);
+    overlay.addEventListener('click', this._close);
+    buttonDelete.addEventListener('click', this._close);
+    buttonCancel.addEventListener('click', this._close);
+    if (this.showButtons) {
+      modalButtons.style.display = 'flex';
+    }
+  }
+
+  _close() {
+    modal.classList.add('hidden');
+    overlay.classList.add('hidden');
+    buttonCloseModal.removeEventListener('click', this._close);
+    overlay.removeEventListener('click', this._close);
+    buttonDelete.removeEventListener('click', this._close);
+    buttonCancel.removeEventListener('click', this._close);
+    modalButtons.style.display = 'none';
+  }
+
+  _handleEscape(e) {
+    if (e.key === 'Escape') {
+      this._close();
+      document.removeEventListener('keyup', e => this._handleEscape(e));
+    }
   }
 }
 
