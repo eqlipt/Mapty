@@ -1,6 +1,6 @@
 # Mapty
 
-Live demo https://mapty-beta.vercel.app/
+Live demo https://mapty-eqlipt.vercel.app
 
 Javascript + Leaflet.
 
