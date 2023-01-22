@@ -122,8 +122,10 @@ class App {
     );
     document.addEventListener('keyup', e => this._handleEscape(e));
     buttonReset.addEventListener('click', e => this._handleReset(e));
+    buttonDelete.addEventListener('click', this._doDelete.bind(this));
   }
 
+  /////////////
   // Handlers
   _handleEscape(e) {
     if (e.key === 'Escape') {
@@ -160,11 +162,10 @@ class App {
     this._reset();
   }
 
+  //////////////////
   // Workout methods
-  _getWorkoutFromArrayByEvent(e) {
-    const workoutEl = this._getWorkoutElementByEvent(e);
-    if (!workoutEl) return;
-    return this._getWorkoutById(workoutEl.dataset.id);
+  _getWorkoutById(id) {
+    return this.#workouts.find(wrkt => wrkt.id === id);
   }
 
   _getWorkoutElementByEvent(e) {
@@ -175,8 +176,10 @@ class App {
     return document.querySelector('[data-id="' + workout.id + '"]');
   }
 
-  _getWorkoutById(id) {
-    return this.#workouts.find(wrkt => wrkt.id === id);
+  _getWorkoutFromArrayByEvent(e) {
+    const workoutEl = this._getWorkoutElementByEvent(e);
+    if (!workoutEl) return;
+    return this._getWorkoutById(workoutEl.dataset.id);
   }
 
   _getCurrentWorkoutIndex() {
@@ -197,36 +200,58 @@ class App {
     // Identify clicked workout
     const workoutFromArray = this._getWorkoutFromArrayByEvent(e);
     if (!workoutFromArray) return;
+    this.#currentWorkout = Object.create(Workout.prototype);
+    this.#currentWorkout._populateFromCopy(workoutFromArray);
 
-    // Get confirmation
-    const confirmationDialog = new Dialog(
+    // Open confirmation dialog
+    new Dialog(
       'Confirm delete',
       'Are you sure you want to delete this workout?',
       true
     );
-    // add confirmation functionality
 
+    // buttonCancel.addEventListener('click', this._doCancelDelete);
+  }
+
+  _doDelete() {
     // Identify and delete map marker
     const markerToDelete = this.#mapMarkers.find(mrkr =>
-      this._compareCoords(mrkr, workoutFromArray)
+      this._compareCoords(mrkr, this.#currentWorkout)
     );
     if (!markerToDelete) return;
     markerToDelete.remove();
 
     // Delete workout from DOM
-    const workoutEl = this._getWorkoutElementByEvent(e);
+    const workoutEl = this._getWorkoutElementByWorkout(this.#currentWorkout);
     if (!workoutEl) return;
     workoutEl.remove();
 
     // Delete workout from array
     this.#workouts = this.#workouts.filter(
-      wrkt => wrkt.id !== workoutFromArray.id
+      wrkt => wrkt.id !== this.#currentWorkout.id
     );
 
     // Save array to localstorage
     this._setStorage();
+
+    // Reset current workout
+    this.#currentWorkout = null;
+
+    // Unset event listeners
+    // buttonDelete.removeEventListener('click', () => {
+    //   this._doDelete(e, workoutFromArray);
+    // });
+    // buttonCancel.removeEventListener('click', this._doCancelDelete);
   }
 
+  _doCancelDelete() {
+    // buttonDelete.removeEventListener('click', () => {
+    //   this._doDelete(e, workoutFromArray);
+    // });
+    // buttonCancel.removeEventListener('click', this._doCancelDelete);
+  }
+
+  //////////////
   // Map methods
   _getPosition() {
     if (navigator.geolocation) {
